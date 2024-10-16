@@ -69,6 +69,11 @@ jobs:
         run: |
           curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-amd64.tar.gz | tar zxv
           chmod +x bin/ipatool-2.1.4-macos-amd64
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PASSWORD="abc123"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email ${IPA_EMAIL} --password ${IPA_PASSWORD}${{ inputs.auth_code }}
           mkdir -p main
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
