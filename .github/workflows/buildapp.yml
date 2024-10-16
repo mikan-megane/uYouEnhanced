@@ -70,9 +70,9 @@ jobs:
           curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-amd64.tar.gz | tar zxv
           chmod +x bin/ipatool-2.1.4-macos-amd64
           if [ -z "${{ inputs.auth_code }}" ] ; then
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login -e $IPA_EMAIL -p $IPA_PASSWORD
+            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email $IPA_EMAIL --password $IPA_PASSWORD
           else
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login -e $IPA_EMAIL -p $IPA_PASSWORD --auth-code ${{ inputs.auth_code }}
+            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email $IPA_EMAIL --password $IPA_PASSWORD --auth-code ${{ inputs.auth_code }}
           fi
           mkdir -p main
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
@@ -158,18 +158,9 @@ jobs:
           THEOS: ${{ github.workspace }}/theos
           YOUTUBE_URL: ${{ env.URL_YT }}
 
-      - name: Download YouTube iPA
+      - name: Prepare Downloaded YouTube iPA
         if: ${{ inputs.decrypted_youtube_url == '' }}
         run: |
-          curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-amd64.tar.gz | tar zxv
-          chmod +x bin/ipatool-2.1.4-macos-amd64
-          if [ -z "${{ inputs.auth-code }}" ] ; then
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login -e $IPA_EMAIL -p $IPA_PASSWORD
-          else
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login -e $IPA_EMAIL -p $IPA_PASSWORD --auth-code ${{ inputs.auth-code }}
-          fi
-          ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
-          rm -rf bin
           cd ${{ github.workspace }}/main
           mv YouTube.ipa YouTube.zip
           unzip -q YouTube.zip
