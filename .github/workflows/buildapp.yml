@@ -19,7 +19,7 @@ on:
       decrypted_youtube_url:
         description: "Direct URL of the decrypted YouTube IPA"
         default: ""
-        required: true
+        required: false
         type: string
       bundle_id:
         description: "Modify the bundle ID"
@@ -116,12 +116,14 @@ jobs:
           THEOS: ${{ github.workspace }}/theos
 
       - name: Hash YT ipa url
+        if: ${{ inputs.decrypted_youtube_url != '' }}
         run: |
           URL_YT="$(jq -r '.inputs.decrypted_youtube_url' $GITHUB_EVENT_PATH)"
           echo ::add-mask::$URL_YT
           echo URL_YT=$URL_YT >> $GITHUB_ENV
 
       - name: Prepare YouTube iPA
+        if: ${{ inputs.decrypted_youtube_url != '' }}
         id: prepare_youtube
         run: |
           wget "$YOUTUBE_URL" --quiet --no-verbose -O main/YouTube.ipa
@@ -136,6 +138,32 @@ jobs:
         env:
           THEOS: ${{ github.workspace }}/theos
           YOUTUBE_URL: ${{ env.URL_YT }}
+
+      - name: SET apple credentials
+        if: ${{ inputs.decrypted_youtube_url == '' }}
+        run: |
+          mkdir -p ~/.ipatool
+          echo "$APPLE_CREDENTIALS" > ~/.ipatool/account
+        env:
+          SECRET_FILE: ${{ secrets.IPA_SECRET_FILE }}
+
+      - name: Download YouTube iPA
+        if: ${{ inputs.decrypted_youtube_url == '' }}
+        run: |
+          mkdir main
+          curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-arm64.tar.gz | tar zxv
+          chmod +x bin/ipatool-2.1.4-macos-arm64
+          ./bin/ipatool-2.1.4-macos-arm64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
+          rm -rf bin
+          cd ${{ github.workspace }}/main
+          mv YouTube.ipa YouTube.zip
+          unzip -q YouTube.zip
+          youtube_version=$(defaults read "$(pwd)/Payload/YouTube.app/Info" CFBundleVersion)
+          echo "==> YouTube v$youtube_version downloaded!"
+          sed -i '' "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile
+          echo "youtube_version=${youtube_version}" >> $GITHUB_OUTPUT
+        env:
+          THEOS: ${{ github.workspace }}/theos
 
       - name: Fix compiling & Build Package
         id: build_package
