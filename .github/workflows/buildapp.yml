@@ -69,11 +69,7 @@ jobs:
         run: |
           curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-amd64.tar.gz | tar zxv
           chmod +x bin/ipatool-2.1.4-macos-amd64
-          if [ -z "${{ inputs.auth_code }}" ] ; then
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email $IPA_EMAIL --password $IPA_PASSWORD
-          else
-            ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email $IPA_EMAIL --password $IPA_PASSWORD --auth-code ${{ inputs.auth_code }}
-          fi
+          ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email ${IPA_EMAIL} --password ${IPA_PASSWORD}${{ inputs.auth_code }}
           mkdir -p main
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
           rm -rf bin
