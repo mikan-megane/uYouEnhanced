@@ -73,10 +73,13 @@ jobs:
           KEYCHAIN_PASSWORD="abc123"
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security default-keychain -s $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' auth login --email ${IPA_EMAIL} --password ${IPA_PASSWORD}${{ inputs.auth_code }}
           mkdir -p main
+          echo "Downloading YouTube iPA..."
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
+          echo "Downloaded YouTube iPA!"
           rm -rf bin
         env:
           IPA_EMAIL: ${{ secrets.IPA_EMAIL }}
