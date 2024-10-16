@@ -150,7 +150,6 @@ jobs:
       - name: Download YouTube iPA
         if: ${{ inputs.decrypted_youtube_url == '' }}
         run: |
-          mkdir main
           curl -L https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-arm64.tar.gz | tar zxv
           chmod +x bin/ipatool-2.1.4-macos-arm64
           ./bin/ipatool-2.1.4-macos-arm64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
