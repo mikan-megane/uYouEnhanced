@@ -73,6 +73,9 @@ jobs:
           mkdir -p main
           ./bin/ipatool-2.1.4-macos-amd64 --non-interactive --keychain-passphrase 'abc123' download -b com.google.ios.youtube -o main/YouTube.ipa
           rm -rf bin
+        env:
+          IPA_EMAIL: ${{ secrets.IPA_EMAIL }}
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
 
       - name: Checkout Main
         uses: actions/checkout@v4.2.1
@@ -166,8 +169,6 @@ jobs:
           echo "youtube_version=${youtube_version}" >> $GITHUB_OUTPUT
         env:
           THEOS: ${{ github.workspace }}/theos
-          IPA_EMAIL: ${{ secrets.IPA_EMAIL }}
-          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
 
       - name: Fix compiling & Build Package
         id: build_package
