@@ -4,6 +4,14 @@
 #define YT_BUNDLE_ID @"com.google.ios.youtube"
 #define YT_NAME @"YouTube"
 
+// Declared for the Dynamic Island fix (gDynamicIslandFix below) — logos only
+// emits a forward @class for hooked classes, which isn't enough to message
+// defaultCenter]/setNowPlayingInfo: from the didBecomeActive observer.
+@interface MPNowPlayingInfoCenter : NSObject
+@property (nonatomic, copy) NSDictionary *nowPlayingInfo;
++ (MPNowPlayingInfoCenter *)defaultCenter;
+@end
+
 # pragma mark - YouTube patches
 
 // Fix Google Sign in Patch - handles AltStore and SideStore bundle IDs
@@ -302,7 +310,7 @@ static BOOL showNativeShareSheet(NSString *serializedShareEntity, UIView *source
                     object:nil queue:[NSOperationQueue mainQueue]
                usingBlock:^(NSNotification *note) {
         @try {
-            [[%c(MPNowPlayingInfoCenter) defaultCenter] setNowPlayingInfo:nil];
+            [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nil;
         } @catch (NSException *e) {}
     }];
 
