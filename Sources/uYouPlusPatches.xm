@@ -268,10 +268,44 @@ static BOOL showNativeShareSheet(NSString *serializedShareEntity, UIView *source
 %end
 %end // gSideloadingPatches
 
+// Dynamic Island suppression while in-app (#69, #358, #823)
+// Sideloaded builds using the official bundle ID lack Apple's media
+// entitlements, so iOS renders the Dynamic Island the moment any Now Playing
+// info is published — even while the app is frontmost. This is a signing/
+// environment artifact (not a uYou bug), hence it lives with the other
+// sideloading patches. Drop Now Playing updates while the app is ACTIVE;
+// background playback / PiP still publish normally once the app leaves the
+// foreground, so lock-screen controls and the island keep working outside.
+%group gDynamicIslandFix
+%hook MPNowPlayingInfoCenter
+- (void)setNowPlayingInfo:(NSDictionary *)info {
+    // Clearing is always allowed; fresh publications are blocked in-app so
+    // the island can't expand while you're inside YouTube.
+    if (info != nil && [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive) {
+        return;
+    }
+    %orig;
+}
+%end
+%end
+
 %ctor {
     %init;
     %init(gPatches);
     %init(gSideloadingPatches);
+    %init(gDynamicIslandFix);
+
+    // Returning to the app: clear any stale Now Playing session so an
+    // already-expanded island collapses instead of lingering in-app.
+    [[NSNotificationCenter defaultCenter]
+        addObserverForName:UIApplicationDidBecomeActiveNotification
+                    object:nil queue:[NSOperationQueue mainQueue]
+               usingBlock:^(NSNotification *note) {
+        @try {
+            [[%c(MPNowPlayingInfoCenter) defaultCenter] setNowPlayingInfo:nil];
+        } @catch (NSException *e) {}
+    }];
+
     if (IS_ENABLED(kGoogleSignInPatch)) {
         %init(gGoogleSignInPatch);
     }

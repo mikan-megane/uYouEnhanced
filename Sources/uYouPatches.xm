@@ -367,6 +367,7 @@ static void UYTFallbackToVideoOnly(id item) {
         if (!filePath) return;
 
         NSString *src = nil;
+        BOOL usedMuxed = NO;
         NSString *vid = nil;
         if ([uyouItem respondsToSelector:@selector(videoID)]) {
             vid = [uyouItem valueForKey:@"videoID"];
@@ -377,7 +378,10 @@ static void UYTFallbackToVideoOnly(id item) {
         if (vid.length) {
             NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
             NSString *muxed = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"uYouDownloads/%@.mp4", vid]];
-            if ([fm fileExistsAtPath:muxed]) src = muxed;
+            if ([fm fileExistsAtPath:muxed]) {
+                src = muxed;
+                usedMuxed = YES;
+            }
         }
         // 2) Otherwise: uYou's cached video-only stream (silent, but playable).
         NSString *cachedVideoPath = [uyouItem cachedVideoPath];
@@ -389,7 +393,7 @@ static void UYTFallbackToVideoOnly(id item) {
             BOOL ok = [fm moveItemAtPath:src toPath:filePath error:&err];
             if (!ok) ok = [fm copyItemAtPath:src toPath:filePath error:&err];
             HBLogWarn(@"[uYouPatches] Completed without merge (%@): %@",
-                      src == muxed ? @"muxed pipeline file" : @"video-only stream", filePath);
+                      usedMuxed ? @"muxed pipeline file" : @"video-only stream", filePath);
         }
     } @catch (NSException *e) {
         HBLogWarn(@"[uYouPatches] no-merge fallback failed: %@", e);
