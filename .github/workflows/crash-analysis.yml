@@ -1,19 +1,12 @@
-name: Crash Analysis - uYouEnhanced
+
+name: Crash Analysis
 
 on:
   workflow_dispatch:
     inputs:
-      source:
-        description: "Where to fetch the IPA from"
-        required: true
-        default: "latest-draft-release"
-        type: choice
-        options:
-          - latest-draft-release
-          - artifact
       run_id:
-        description: "(artifact source only) Actions run ID that uploaded the IPA"
-        required: false
+        description: "Actions run ID of the build that uploaded the IPA artifact"
+        required: true
         type: string
       offsets:
         description: "Crash frame offsets into the tweak dylib (.ips imageOffset), comma-separated, e.g. 81012 or 0x13C94"
@@ -37,35 +30,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Fetch IPA from latest draft release
-        if: ${{ inputs.source == 'latest-draft-release' }}
+      - name: Fetch IPA from build artifacts
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          mkdir -p ipa
-          ASSET_ID=$(gh api "repos/$REPO/releases" \
-            --jq '[.[] | select(.draft == true)] | sort_by(.created_at) | reverse | .[0].assets[0].id') \
-            || { echo "::error::No draft release with assets found"; exit 1; }
-          echo "Downloading release asset id=$ASSET_ID"
-          gh api "repos/$REPO/releases/assets/$ASSET_ID" \
-            -H "Accept: application/octet-stream" > ipa/uYouEnhanced.ipa
-          ls -la ipa/
-
-      - name: Fetch IPA from artifact
-        if: ${{ inputs.source == 'artifact' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          RID="${{ inputs.run_id }}"
-          if [ -z "$RID" ]; then
-            echo "::error::artifact source requires the run_id input"
-            exit 1
-          fi
-          gh run download "$RID" --repo "$REPO" --dir artifact
+          gh run download "${{ inputs.run_id }}" --repo "$REPO" --dir artifact
           mkdir -p ipa
           FOUND=$(find artifact -type f -name '*.ipa' | head -n1)
           [ -n "$FOUND" ] || { echo "::error::No .ipa in that run's artifacts"; exit 1; }
@@ -99,7 +70,6 @@ jobs:
           for DY in $DYLIBS; do
             echo "=== symbolicate $DY (offsets: $OFFSETS) ===" | tee -a "$REPORT"
             python3 Scripts/crash_analyzer.py info "$DY" 2>&1 | tee -a "$REPORT"
-            # shellcheck disable=SC2086
             python3 Scripts/crash_analyzer.py symbolicate "$DY" $OFFSETS 2>&1 | tee -a "$REPORT"
           done
 
